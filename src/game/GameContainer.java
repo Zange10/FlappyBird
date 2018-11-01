@@ -7,7 +7,7 @@ public class GameContainer extends Thread {
 	private Thread thread;
 	GraphicsEnvironment env;
 	private boolean running = false;
-	private final double UPDATE_CAP = 1.0/60.0;
+	private final double UPDATE_CAP = 1.0/300000.0;
 	private int width, height;
 	private float scale = 1f;
 	private String title = "Effects";

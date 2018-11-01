@@ -4,10 +4,13 @@ package game;
 public class PlayerBird {
 	GameContainer gc;
 	int y, ySpeed, birdBounds, score;
+	double distance;
 	boolean alive;
+	Game game;
 	
-	PlayerBird(GameContainer gc, int birdBounds) {
+	PlayerBird(GameContainer gc, Game game, int birdBounds) {
 		this.gc = gc;
+		this.game = game;
 		this.birdBounds = birdBounds;
 		y = gc.getHeight()/2 - birdBounds/2;
 		alive = true;
@@ -28,7 +31,8 @@ public class PlayerBird {
 			alive = false;
 			y = 0;
 			ySpeed = 0;
-		}		
+		}
+		distance = game.getSpeed();
 	}
 	
 	public boolean collides(Barrier[] barriers, int birdX, int birdWidth, int barriersWidth) {

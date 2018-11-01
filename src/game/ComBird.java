@@ -48,7 +48,7 @@ public class ComBird {
 			y = 0;
 			ySpeed = 0;
 		}
-		distance++;
+		distance += game.getSpeed();
 	}
 	
 	private int getNextBarrierIndex(Barrier[] barriers, int birdX, int birdWidth, int barriersWidth) {

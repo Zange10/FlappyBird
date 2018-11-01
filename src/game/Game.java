@@ -24,13 +24,15 @@ public class Game {
 	Barrier[] barriers;
 	boolean lastWasUp, evo2CanRun;
 	private Random rand;
-	int gen, fitnessSum;
+	int gen, fitnessSum, populationSize;
+	double[] fitnesses;
 	
 	Game(GameContainer gc) {
 		this.gc = gc;
 		rand = new Random();
 		area = new int[gc.getWidth()][gc.getHeight()];
 		startingSpeed = 3;
+		populationSize = 100;
 		speed = startingSpeed;
 		barriersWidth = 75;
 		barriersSpaceHeight = new int[]{175, 250};
@@ -55,14 +57,15 @@ public class Game {
 		birdX = 100;
 		birdSideLength = 35;
 		player = false;
-		if(player) playerBird = new PlayerBird(gc, birdSideLength);
+		if(player) playerBird = new PlayerBird(gc, this, birdSideLength);
 		else {
-			comBirds = new ComBird[500];
+			comBirds = new ComBird[populationSize];
+			fitnesses = new double[populationSize];
 			for(int i = 0; i < comBirds.length; i++) {
 				comBirds[i] = new ComBird(gc, this, birdSideLength);
 			}
-			evoWindow = new EvolutionWindow(500, 500);
-			evoWindow2 = new EvolutionWindow(500, 500);
+			evoWindow = new EvolutionWindow(500, 500, populationSize);
+			evoWindow2 = new EvolutionWindow(500, 500, populationSize);
 			evo2CanRun = false;
 			netWindow = new NetworkWindow(comBirds[0].getBrain().getNumInputs(), comBirds[0].getBrain().getNumHidden(), comBirds[0].getBrain().getNumOutputs());
 			netWindow.updateData(comBirds[0].getBrain().getBrain().getWeightsArray(), comBirds[0].getBrain().getBrain().getBiasesArray());
@@ -129,7 +132,7 @@ public class Game {
 					comBirds[i].updateScore(barriers, birdX, barriersWidth, (int)speed);
 				}
 			}
-			boolean showAllBirds = false;
+			boolean showAllBirds = true;
 			
 			for(ComBird bird : comBirds) {
 				if(bird.isAlive()) {
@@ -182,7 +185,7 @@ public class Game {
 			doNaturalSelection();
 			mutateBabies();
 		} else {
-			playerBird = new PlayerBird(gc, birdSideLength);
+			playerBird = new PlayerBird(gc, this, birdSideLength);
 		}
 		resetBarriers();
 		speed = startingSpeed;
@@ -219,36 +222,21 @@ public class Game {
 		fitnessSum = 0;
 		for(int i = 0; i < comBirds.length; i++) {
 			fitnessSum += comBirds[i].getFitness();
+			fitnesses[i] = comBirds[i].getFitness();
 		}
 	}
 	
 	// parsing Bird data
 	private void updateEvolutionWindow() {
-		double best = 0, median = 0, worst = comBirds[0].getFitness();
-		int index = 0;
-		for(index = 0; index < comBirds.length; index++) {
-			double fitness = comBirds[index].getFitness();
-			median += fitness;
-			if(fitness > best) best = fitness;
-			else if(fitness < worst) worst = fitness;
-		}
-		median /= index;
-		evoWindow.updateData(best, median, worst);
+		evoWindow.updateData(fitnesses);
 		evoWindow.updateLines();
 		evoWindow.update();
 		// evoWindow2
-		best = 0;
-		median = 0;
-		worst = comBirds[0].getScore();
-		index = 0;
-		for(index = 0; index < comBirds.length; index++) {
-			double score = comBirds[index].getScore();
-			median += score;
-			if(score > best) best = score;
-			else if(score < worst) worst = score;
+		double[] scores = new double[populationSize];
+		for(int i = 0; i < populationSize; i++) {
+			scores[i] = comBirds[i].getScore();
 		}
-		median /= index;
-		evoWindow2.updateData(best, median, worst);
+		evoWindow2.updateData(scores);
 		evoWindow2.updateLines();
 		evoWindow2.update();
 
