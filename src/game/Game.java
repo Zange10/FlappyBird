@@ -1,5 +1,6 @@
 package game;
 
+import java.awt.event.KeyEvent;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -13,10 +14,11 @@ public class Game {
 	GameContainer gc;
 	int[][] area;
 	int barriersWidth, birdSideLength, birdX;
-	double speed;
+	double speed, startingSpeed;
 	int[] barriersSpaceHeight, barriersSpaceY, barrierNextX;	// min and max
 	PlayerBird playerBird;
 	ComBird[] comBirds;
+	boolean player;
 	EvolutionWindow evoWindow, evoWindow2;
 	NetworkWindow netWindow;
 	Barrier[] barriers;
@@ -28,7 +30,8 @@ public class Game {
 		this.gc = gc;
 		rand = new Random();
 		area = new int[gc.getWidth()][gc.getHeight()];
-		speed = 3;
+		startingSpeed = 3;
+		speed = startingSpeed;
 		barriersWidth = 75;
 		barriersSpaceHeight = new int[]{175, 250};
 		barriersSpaceY = new int[]{50, gc.getHeight() - 300};
@@ -51,57 +54,25 @@ public class Game {
 		}
 		birdX = 100;
 		birdSideLength = 35;
-//		bird = new PlayerBird(gc, birdSideLength);
-		comBirds = new ComBird[500];
-		for(int i = 0; i < comBirds.length; i++) {
-			comBirds[i] = new ComBird(gc, this, birdSideLength);
+		player = false;
+		if(player) playerBird = new PlayerBird(gc, birdSideLength);
+		else {
+			comBirds = new ComBird[500];
+			for(int i = 0; i < comBirds.length; i++) {
+				comBirds[i] = new ComBird(gc, this, birdSideLength);
+			}
+			evoWindow = new EvolutionWindow(500, 500);
+			evoWindow2 = new EvolutionWindow(500, 500);
+			evo2CanRun = false;
+			netWindow = new NetworkWindow(comBirds[0].getBrain().getNumInputs(), comBirds[0].getBrain().getNumHidden(), comBirds[0].getBrain().getNumOutputs());
+			netWindow.updateData(comBirds[0].getBrain().getBrain().getWeightsArray(), comBirds[0].getBrain().getBrain().getBiasesArray());
+			netWindow.update();
 		}
-		evoWindow = new EvolutionWindow(500, 500);
-		evoWindow2 = new EvolutionWindow(500, 500);
-		evo2CanRun = false;
-		netWindow = new NetworkWindow(comBirds[0].getBrain().getNumInputs(), comBirds[0].getBrain().getNumHidden(), comBirds[0].getBrain().getNumOutputs());
-		netWindow.updateData(comBirds[0].getBrain().getBrain().getWeightsArray(), comBirds[0].getBrain().getBrain().getBiasesArray());
-		netWindow.update();
 	}
 
 	public void update() {
-//		if(!bird.isAlive()) reset();
-//		if(!lastWasUp) bird.update(gc.getInput().isKey(KeyEvent.VK_SPACE));
-//		else bird.update(false);
-//		lastWasUp = gc.getInput().isKey(KeyEvent.VK_SPACE);
-		
-		if(isEveryBirdDead()) resetGame();
-		
-		for(int i = 0; i < barriers.length; i++) {
-			barriers[i].setX((barriers[i].getX() - (int)speed));
-			if(barriers[i].getX() + barriersWidth < 0) {
-				removeBarrier();
-				i--;
-			}
-		}
-		
-		for(int i = 0; i < comBirds.length; i++) {
-			if(comBirds[i].isAlive()) {
-				comBirds[i].update();
-				if(comBirds[i].collides(barriers, birdX, birdSideLength, barriersWidth)) {
-					comBirds[i].setAlive(false);
-					//return;
-				}
-				comBirds[i].updateScore(barriers, birdX, barriersWidth, (int)speed);
-			}
-		}
-		
 		clearArea();
-		
-		for(ComBird bird : comBirds) {
-			if(bird.isAlive()) {
-				for(int i = 0; i < birdSideLength; i++) {
-					for(int j = 0; j < birdSideLength; j++) {
-						area[birdX + i][bird.getY() + j] = 0xffffffff;	// White
-					}
-				}
-			}
-		}
+		// update Barriers -------------------------------------------------------
 		for(Barrier barrier : barriers) {
 			for(int i = 0; i < barrier.getSpaceY(); i++) {
 				for(int j = 0; j < barriersWidth; j++) {
@@ -115,6 +86,59 @@ public class Game {
 					if(barrier.getX() + j >= 0 && barrier.getX() + j < area.length) {
 						area[barrier.getX() + j][i] = 0xffffffff;	// White	below Space of Barrier
 					}
+				}
+			}
+		}
+		
+		for(int i = 0; i < barriers.length; i++) {
+			barriers[i].setX((barriers[i].getX() - (int)speed));
+			if(barriers[i].getX() + barriersWidth < 0) {
+				removeBarrier();
+				i--;
+			}
+		}
+		
+		
+		if(player) {	// player ------------------------------------------------------
+			if(!playerBird.isAlive()) resetGame();
+			if(!lastWasUp) playerBird.update(gc.getInput().isKey(KeyEvent.VK_SPACE));
+			else playerBird.update(false);
+			if(playerBird.collides(barriers, birdX, birdSideLength, barriersWidth)) {
+				playerBird.setAlive(false);
+			}
+			lastWasUp = gc.getInput().isKey(KeyEvent.VK_SPACE);
+			
+			if(playerBird.isAlive()) {
+				for(int i = 0; i < birdSideLength; i++) {
+					for(int j = 0; j < birdSideLength; j++) {
+						area[birdX + i][playerBird.getY() + j] = 0xffffffff;	// White
+					}
+				}
+			}		
+			
+		} else {	// comBirds -------------------------------------------------------------
+			if(isEveryBirdDead()) resetGame();
+			
+			for(int i = 0; i < comBirds.length; i++) {
+				if(comBirds[i].isAlive()) {
+					comBirds[i].update();
+					if(comBirds[i].collides(barriers, birdX, birdSideLength, barriersWidth)) {
+						comBirds[i].setAlive(false);
+						//return;
+					}
+					comBirds[i].updateScore(barriers, birdX, barriersWidth, (int)speed);
+				}
+			}
+			boolean showAllBirds = false;
+			
+			for(ComBird bird : comBirds) {
+				if(bird.isAlive()) {
+					for(int i = 0; i < birdSideLength; i++) {
+						for(int j = 0; j < birdSideLength; j++) {
+							area[birdX + i][bird.getY() + j] = 0xffffffff;	// White
+						}
+					}
+					if(!showAllBirds) break;
 				}
 			}
 		}
@@ -151,13 +175,17 @@ public class Game {
 	}
 
 	private void resetGame() {
-		calcFitnessPop();
-		calcFitnessSum();
-		updateEvolutionWindow();
-		doNaturalSelection();
-		mutateBabies();
+		if(!player) {
+			calcFitnessPop();
+			calcFitnessSum();
+			updateEvolutionWindow();
+			doNaturalSelection();
+			mutateBabies();
+		} else {
+			playerBird = new PlayerBird(gc, birdSideLength);
+		}
 		resetBarriers();
-		speed = 3;
+		speed = startingSpeed;
 	}
 
 	private void resetBarriers() {
