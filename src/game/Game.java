@@ -64,8 +64,8 @@ public class Game {
 			for(int i = 0; i < comBirds.length; i++) {
 				comBirds[i] = new ComBird(gc, this, birdSideLength);
 			}
-			evoWindow = new EvolutionWindow(500, 500, populationSize);
-			evoWindow2 = new EvolutionWindow(500, 500, populationSize);
+			evoWindow = new EvolutionWindow(500, 500);
+			evoWindow2 = new EvolutionWindow(500, 500);
 			evo2CanRun = false;
 			netWindow = new NetworkWindow(comBirds[0].getBrain().getNumInputs(), comBirds[0].getBrain().getNumHidden(), comBirds[0].getBrain().getNumOutputs());
 			netWindow.updateData(comBirds[0].getBrain().getBrain().getWeightsArray(), comBirds[0].getBrain().getBrain().getBiasesArray());
